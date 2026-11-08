@@ -1,8 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff1e6;
+  --foreground: #5a2d0c;
+
+  --color-peach-50: #fff7f0;
+  --color-peach-100: #ffe9d6;
+  --color-peach-200: #ffd4ad;
+  --color-peach-300: #ffb87a;
+  --color-peach-400: #ff9d4d;
+  --color-peach-500: #fb8a2e;
+
+  --color-orange-strong-500: #f2660f;
+  --color-orange-strong-600: #d9520a;
+  --color-orange-strong-700: #b84008;
 }
 
 @theme inline {
@@ -10,17 +21,35 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-peach-50: var(--color-peach-50);
+  --color-peach-100: var(--color-peach-100);
+  --color-peach-200: var(--color-peach-200);
+  --color-peach-300: var(--color-peach-300);
+  --color-peach-400: var(--color-peach-400);
+  --color-peach-500: var(--color-peach-500);
+
+  --color-orange-strong-500: var(--color-orange-strong-500);
+  --color-orange-strong-600: var(--color-orange-strong-600);
+  --color-orange-strong-700: var(--color-orange-strong-700);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Evita el "callback azul" al tocar en móviles/tablets */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }
