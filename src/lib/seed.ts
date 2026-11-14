@@ -93,6 +93,30 @@ const OTHER_PRODUCTS: SeedProduct[] = [
   { id: "brownie", name: "Brownie", category: "otros", price: 5.8 },
 ];
 
+export interface TortaMoldeVariant {
+  key: "normal" | "especial" | "semi";
+  label: string;
+  productId: string;
+}
+
+export interface TortaMolde {
+  id: string;
+  label: string;
+  variants: TortaMoldeVariant[];
+}
+
+export const TORTA_MOLDES: TortaMolde[] = MOLDE_SIZES.map((size) => ({
+  id: size.id,
+  label: size.label,
+  variants: VARIANTS.map((variant) => ({
+    key: variant.suffix as TortaMoldeVariant["key"],
+    label: variant.label,
+    productId: `torta-${size.id}-${variant.suffix}`,
+  })),
+}));
+
+export const DEFAULT_DRIVERS: string[] = [];
+
 const ALL_SEED_PRODUCTS: SeedProduct[] = [...buildTortas(), ...OTHER_PRODUCTS];
 
 export const CATALOG: Product[] = ALL_SEED_PRODUCTS.map((p, idx) => ({
@@ -131,5 +155,8 @@ export function createInitialData(): AppData {
       },
     },
     history: [],
+    drivers: DEFAULT_DRIVERS,
+    dispatchSeq: 0,
+    onboarded: false,
   };
 }

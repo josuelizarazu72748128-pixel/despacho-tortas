@@ -1,22 +1,38 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Nunito } from "next/font/google";
 import "./globals.css";
 import { DataProvider } from "@/lib/storage";
 import NavBar from "@/components/NavBar";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Despacho de Tortas",
-  description: "Calcula el total de tortas que se despachan a cada sucursal",
+  title: "Gema Pastelería · Despacho",
+  description: "Control de envíos a sucursales — Gema Pastelería",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Despacho Gema",
+  },
 };
 
 export const viewport: Viewport = {
@@ -24,22 +40,23 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#fb8a2e",
+  themeColor: "#ee8a5c",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${poppins.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-peach-50 text-[15px] sm:text-base">
+      <body className="min-h-full flex flex-col bg-cream text-[15px] text-foreground sm:text-base">
         <DataProvider>
           <NavBar />
-          <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+          <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col pb-20 md:pb-6">
             {children}
           </main>
         </DataProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

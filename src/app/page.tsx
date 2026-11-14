@@ -1,192 +1,130 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Receipt, Package, Truck, TrendingUp } from "lucide-react";
 import { useData } from "@/lib/storage";
-import { CATEGORIES } from "@/lib/seed";
 import { formatBs } from "@/lib/format";
-import Stepper from "@/components/Stepper";
-import type { DispatchItem } from "@/lib/types";
+import OnboardingGuide from "@/components/OnboardingGuide";
 
-export default function DespachoPage() {
-  const { data, saveDispatch } = useData();
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string>("");
-  const placeId = selectedPlaceId || data.places[0]?.id || "";
-  const [qty, setQty] = useState<Record<string, number>>({});
-  const [message, setMessage] = useState<string | null>(null);
+function localDateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
 
-  const placePrices = useMemo(
-    () => data.prices[placeId] ?? {},
-    [data.prices, placeId]
+export default function InicioPage() {
+  const { data, setOnboarded } = useData();
+
+  // La fecha de hoy es un valor no determinista: se lee recién en el
+  // cliente (no durante el prerender) para no "congelar" el día del build.
+  const [todayKey, setTodayKey] = useState<string | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTodayKey(localDateKey(new Date()));
+  }, []);
+
+  const todayRecords = useMemo(() => {
+    if (!todayKey) return [];
+    return data.history.filter((h) => localDateKey(new Date(h.dateISO)) === todayKey);
+  }, [data.history, todayKey]);
+
+  const totalToday = todayRecords.reduce((sum, h) => sum + h.total, 0);
+  const unitsToday = todayRecords.reduce(
+    (sum, h) => sum + h.items.reduce((s, it) => s + it.qty, 0),
+    0
   );
 
-  const groups = useMemo(() => {
-    return CATEGORIES.map((cat) => {
-      const products = data.catalog
-        .filter((p) => p.category === cat.id && placePrices[p.id] !== undefined)
-        .sort((a, b) => a.order - b.order);
-      return { cat, products };
-    }).filter((g) => g.products.length > 0);
-  }, [data.catalog, placePrices]);
+  const placeNames = [...new Set(todayRecords.map((h) => h.placeId))];
+  const byPlace = placeNames
+    .map((placeId) => {
+      const records = todayRecords.filter((h) => h.placeId === placeId);
+      return {
+        name: records[0].placeName,
+        total: records.reduce((sum, h) => sum + h.total, 0),
+      };
+    })
+    .sort((a, b) => b.total - a.total);
 
-  const total = useMemo(() => {
-    let sum = 0;
-    for (const [productId, q] of Object.entries(qty)) {
-      const price = placePrices[productId];
-      if (price !== undefined) sum += price * q;
-    }
-    return sum;
-  }, [qty, placePrices]);
-
-  const itemCount = Object.values(qty).filter((q) => q > 0).length;
-
-  function handleClear() {
-    setQty({});
-    setMessage(null);
-  }
-
-  function handleSave() {
-    const place = data.places.find((p) => p.id === placeId);
-    if (!place) return;
-    const items: DispatchItem[] = data.catalog
-      .filter((p) => (qty[p.id] ?? 0) > 0 && placePrices[p.id] !== undefined)
-      .map((p) => ({
-        productId: p.id,
-        name: p.name,
-        category: p.category,
-        qty: qty[p.id],
-        unitPrice: placePrices[p.id],
-        subtotal: Math.round(placePrices[p.id] * qty[p.id] * 100) / 100,
-      }));
-
-    if (items.length === 0) {
-      setMessage("Agrega al menos una cantidad antes de guardar.");
-      return;
-    }
-
-    saveDispatch({
-      placeId: place.id,
-      placeName: place.name,
-      dateISO: new Date().toISOString(),
-      items,
-      total: Math.round(total * 100) / 100,
-    });
-    setQty({});
-    setMessage("Despacho guardado en el historial.");
-    setTimeout(() => setMessage(null), 3500);
-  }
-
-  if (data.places.length === 0) {
-    return (
-      <div className="p-6 text-center text-orange-strong-700">
-        No hay lugares creados todavía. Ve a la pestaña{" "}
-        <span className="font-semibold">Lugares</span> para crear uno.
-      </div>
-    );
-  }
+  const maxTotal = Math.max(1, ...byPlace.map((b) => b.total));
 
   return (
-    <div className="flex flex-1 flex-col pb-28">
-      <div className="px-4 pt-4 sm:px-6">
-        <label className="mb-1 block text-sm font-semibold text-orange-strong-700">
-          Lugar de destino
-        </label>
-        <select
-          value={placeId}
-          onChange={(e) => {
-            setSelectedPlaceId(e.target.value);
-            setQty({});
-            setMessage(null);
-          }}
-          className="h-14 w-full rounded-2xl border-2 border-peach-300 bg-white px-4 text-lg font-semibold text-foreground shadow-sm"
-        >
-          {data.places.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+    <div className="flex-1 space-y-5 px-4 py-5 sm:px-6">
+      <div>
+        <h2 className="font-heading text-xl font-bold text-brown-strong">Panel del día</h2>
+        <p className="text-sm font-semibold text-brown-soft">
+          Resumen de los despachos registrados hoy
+        </p>
       </div>
 
-      {message && (
-        <div className="mx-4 mt-3 rounded-xl bg-peach-200 px-4 py-2 text-sm font-medium text-orange-strong-700 sm:mx-6">
-          {message}
-        </div>
-      )}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard icon={Receipt} label="Total despachado hoy" value={formatBs(totalToday)} />
+        <StatCard icon={Truck} label="Despachos de hoy" value={String(todayRecords.length)} />
+        <StatCard icon={Package} label="Unidades enviadas" value={String(unitsToday)} />
+      </div>
 
-      <div className="flex-1 space-y-5 px-4 py-4 sm:px-6">
-        {groups.length === 0 && (
-          <p className="text-center text-sm text-orange-strong-700/80">
-            Este lugar no tiene precios cargados. Ve a{" "}
-            <span className="font-semibold">Precios</span> para configurarlos.
-          </p>
-        )}
+      <section className="rounded-[20px] bg-white p-5 shadow-card">
+        <h3 className="mb-4 flex items-center gap-2 font-heading text-base font-bold text-brown-strong">
+          <TrendingUp size={18} className="text-orange-700" />
+          Total por lugar — hoy
+        </h3>
 
-        {groups.map(({ cat, products }) => (
-          <section key={cat.id} className="rounded-2xl bg-peach-100 p-3 shadow-sm sm:p-4">
-            <h2 className="mb-2 px-1 text-base font-bold text-orange-strong-700 sm:text-lg">
-              {cat.label}
-            </h2>
-            <div className="space-y-2">
-              {products.map((p) => {
-                const price = placePrices[p.id] ?? 0;
-                const q = qty[p.id] ?? 0;
-                const subtotal = Math.round(price * q * 100) / 100;
-                return (
+        {byPlace.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-sm font-semibold text-brown-soft">
+              Todavía no se registran despachos hoy.
+            </p>
+            <Link
+              href="/despacho"
+              className="gradient-btn mt-4 inline-flex h-[48px] items-center justify-center rounded-2xl px-6 text-sm font-bold text-white shadow-btn active:scale-95"
+            >
+              Ir a Despacho
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {byPlace.map((b) => (
+              <div key={b.name}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="truncate font-bold text-brown-strong">{b.name}</span>
+                  <span className="shrink-0 font-bold text-terracotta">{formatBs(b.total)}</span>
+                </div>
+                <div className="h-3 w-full overflow-hidden rounded-full bg-cream-soft">
                   <div
-                    key={p.id}
-                    className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-foreground">{p.name}</p>
-                      <p className="text-sm text-orange-strong-700/80">
-                        {formatBs(price)} c/u
-                        {q > 0 && (
-                          <span className="ml-2 font-semibold text-orange-strong-700">
-                            = {formatBs(subtotal)}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <Stepper
-                      value={q}
-                      onChange={(val) => setQty((prev) => ({ ...prev, [p.id]: val }))}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(6, (b.total / maxTotal) * 100)}%`,
+                      background: "linear-gradient(90deg, var(--color-orange-500), var(--color-orange-600))",
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-orange-strong-600 bg-orange-strong-500 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
-        <div className="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex items-baseline justify-between sm:block">
-            <span className="text-sm font-medium text-white/90">
-              Total {itemCount > 0 ? `(${itemCount} productos)` : ""}
-            </span>
-            <span className="text-2xl font-extrabold text-white sm:ml-3 sm:text-3xl">
-              {formatBs(total)}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="h-12 flex-1 rounded-xl bg-white/20 px-4 font-semibold text-white active:scale-95 active:bg-white/30 sm:flex-none"
-            >
-              Limpiar
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="h-12 flex-1 rounded-xl bg-white px-5 font-bold text-orange-strong-700 shadow active:scale-95 sm:flex-none"
-            >
-              Guardar despacho
-            </button>
-          </div>
-        </div>
+      <OnboardingGuide open={!data.onboarded} onFinish={setOnboarded} />
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Receipt;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[20px] bg-white p-4 shadow-card">
+      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-peach-soft text-orange-700">
+        <Icon size={19} />
       </div>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-brown-soft">{label}</p>
+      <p className="mt-0.5 font-heading text-xl font-extrabold text-brown-strong">{value}</p>
     </div>
   );
 }

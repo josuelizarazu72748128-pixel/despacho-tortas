@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { AppData, CategoryId, DispatchRecord } from "./types";
+import type { AppData, CategoryId, DispatchRecord, Place, PriceListMeta } from "./types";
 import { createInitialData } from "./seed";
 
 const STORAGE_KEY = "despacho-tortas:data:v1";
@@ -29,12 +29,35 @@ const SERVER_SNAPSHOT: AppData = createInitialData();
 let cachedSnapshot: AppData | null = null;
 const listeners = new Set<() => void>();
 
+// Rellena campos nuevos que puedan faltar en datos guardados por una versión
+// anterior de la app, sin tocar ni perder nada de lo que ya existía.
+function migrate(raw: Partial<AppData> | null | undefined): AppData {
+  const base = createInitialData();
+  if (!raw) return base;
+  const history = (raw.history ?? []).map((h, idx) => ({
+    ...h,
+    number: h.number ?? (raw.history!.length - idx),
+    driverName: h.driverName ?? "",
+  }));
+  const maxNumber = history.reduce((max, h) => Math.max(max, h.number ?? 0), 0);
+  return {
+    catalog: raw.catalog ?? base.catalog,
+    places: raw.places ?? base.places,
+    prices: raw.prices ?? base.prices,
+    priceMeta: raw.priceMeta ?? base.priceMeta,
+    history,
+    drivers: raw.drivers ?? base.drivers,
+    dispatchSeq: raw.dispatchSeq ?? maxNumber,
+    onboarded: raw.onboarded ?? false,
+  };
+}
+
 function readFromStorage(): AppData {
   if (typeof window === "undefined") return SERVER_SNAPSHOT;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return SERVER_SNAPSHOT;
-    return JSON.parse(raw) as AppData;
+    return migrate(JSON.parse(raw) as Partial<AppData>);
   } catch {
     return SERVER_SNAPSHOT;
   }
@@ -72,6 +95,11 @@ interface DataContextValue {
   addPlace: (name: string, copyFromPlaceId?: string) => string;
   updatePlace: (id: string, name: string) => void;
   deletePlace: (id: string) => void;
+  restorePlace: (
+    place: Place,
+    prices: Record<string, number>,
+    meta: PriceListMeta | undefined
+  ) => void;
   setPrice: (placeId: string, productId: string, price: number) => void;
   setPriceMeta: (placeId: string, label: string) => void;
   addProductToPlace: (
@@ -79,8 +107,11 @@ interface DataContextValue {
     args: { name: string; category: CategoryId; price: number }
   ) => void;
   removeProductFromPlace: (placeId: string, productId: string) => void;
-  saveDispatch: (record: Omit<DispatchRecord, "id">) => void;
+  saveDispatch: (record: Omit<DispatchRecord, "id" | "number">) => DispatchRecord;
   deleteDispatch: (id: string) => void;
+  restoreDispatch: (record: DispatchRecord) => void;
+  addDriver: (name: string) => void;
+  setOnboarded: () => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -132,6 +163,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
     });
   }, []);
+
+  const restorePlace = useCallback(
+    (place: Place, prices: Record<string, number>, meta: PriceListMeta | undefined) => {
+      commit((prev) => ({
+        ...prev,
+        places: [...prev.places, place],
+        prices: { ...prev.prices, [place.id]: prices },
+        priceMeta: meta
+          ? { ...prev.priceMeta, [place.id]: meta }
+          : prev.priceMeta,
+      }));
+    },
+    []
+  );
 
   const setPrice = useCallback((placeId: string, productId: string, price: number) => {
     commit((prev) => ({
@@ -189,13 +234,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const saveDispatch = useCallback((record: Omit<DispatchRecord, "id">) => {
+  const saveDispatch = useCallback((record: Omit<DispatchRecord, "id" | "number">) => {
     const id = `d-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-    commit((prev) => ({ ...prev, history: [{ ...record, id }, ...prev.history] }));
+    let saved: DispatchRecord = { ...record, id, number: 1 };
+    commit((prev) => {
+      const number = prev.dispatchSeq + 1;
+      saved = { ...record, id, number };
+      return {
+        ...prev,
+        history: [saved, ...prev.history],
+        dispatchSeq: number,
+      };
+    });
+    return saved;
   }, []);
 
   const deleteDispatch = useCallback((id: string) => {
     commit((prev) => ({ ...prev, history: prev.history.filter((h) => h.id !== id) }));
+  }, []);
+
+  const restoreDispatch = useCallback((record: DispatchRecord) => {
+    commit((prev) => ({
+      ...prev,
+      history: prev.history.some((h) => h.id === record.id)
+        ? prev.history
+        : [record, ...prev.history].sort((a, b) => b.number - a.number),
+    }));
+  }, []);
+
+  const addDriver = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    commit((prev) =>
+      prev.drivers.some((d) => d.toLowerCase() === trimmed.toLowerCase())
+        ? prev
+        : { ...prev, drivers: [...prev.drivers, trimmed] }
+    );
+  }, []);
+
+  const setOnboarded = useCallback(() => {
+    commit((prev) => ({ ...prev, onboarded: true }));
   }, []);
 
   return (
@@ -205,12 +283,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addPlace,
         updatePlace,
         deletePlace,
+        restorePlace,
         setPrice,
         setPriceMeta,
         addProductToPlace,
         removeProductFromPlace,
         saveDispatch,
         deleteDispatch,
+        restoreDispatch,
+        addDriver,
+        setOnboarded,
       }}
     >
       {children}

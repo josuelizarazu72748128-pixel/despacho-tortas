@@ -43,8 +43,10 @@ export interface DispatchItem {
 
 export interface DispatchRecord {
   id: string;
+  number: number;
   placeId: string;
   placeName: string;
+  driverName: string;
   dateISO: string;
   items: DispatchItem[];
   total: number;
@@ -56,4 +58,7 @@ export interface AppData {
   prices: Record<string, Record<string, number>>;
   priceMeta: Record<string, PriceListMeta>;
   history: DispatchRecord[];
+  drivers: string[];
+  dispatchSeq: number;
+  onboarded: boolean;
 }

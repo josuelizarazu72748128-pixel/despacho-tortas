@@ -1,43 +1,76 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fff1e6;
-  --foreground: #5a2d0c;
+  /* Paleta clonada de pedidos-gema (Gema Pastelería) */
+  --color-cream: #fff8f2;
+  --color-cream-soft: #fff9f3;
+  --color-peach: #ffd9c0;
+  --color-peach-strong: #fdc8a8;
+  --color-peach-soft: #ffe6d3;
+  --color-peach-light: #ffe9d6;
+  --color-border-soft: #e9dfd3;
+  --color-orange-500: #f7b08a;
+  --color-orange-600: #ee8a5c;
+  --color-orange-700: #e8793a;
+  --color-brown: #5a3418;
+  --color-brown-strong: #5c3a21;
+  --color-brown-soft: #8a7a6c;
+  --color-terracotta: #c0592b;
+  --color-terracotta-dark: #b85a24;
+  --color-success-bg: #d8f1df;
+  --color-success-text: #276b43;
+  --color-danger-text: #b23b2e;
 
-  --color-peach-50: #fff7f0;
-  --color-peach-100: #ffe9d6;
-  --color-peach-200: #ffd4ad;
-  --color-peach-300: #ffb87a;
-  --color-peach-400: #ff9d4d;
-  --color-peach-500: #fb8a2e;
+  --background: var(--color-cream);
+  --foreground: var(--color-brown);
 
-  --color-orange-strong-500: #f2660f;
-  --color-orange-strong-600: #d9520a;
-  --color-orange-strong-700: #b84008;
+  --shadow-soft: 0 6px 18px rgba(46, 42, 38, 0.08);
+  --shadow-hover: 0 14px 28px rgba(46, 42, 38, 0.14);
+  --shadow-button: 0 10px 22px rgba(232, 121, 58, 0.35);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-nunito);
+  --font-heading: var(--font-poppins);
 
-  --color-peach-50: var(--color-peach-50);
-  --color-peach-100: var(--color-peach-100);
-  --color-peach-200: var(--color-peach-200);
-  --color-peach-300: var(--color-peach-300);
-  --color-peach-400: var(--color-peach-400);
-  --color-peach-500: var(--color-peach-500);
+  --color-cream: var(--color-cream);
+  --color-cream-soft: var(--color-cream-soft);
+  --color-peach: var(--color-peach);
+  --color-peach-strong: var(--color-peach-strong);
+  --color-peach-soft: var(--color-peach-soft);
+  --color-peach-light: var(--color-peach-light);
+  --color-border-soft: var(--color-border-soft);
+  --color-orange-500: var(--color-orange-500);
+  --color-orange-600: var(--color-orange-600);
+  --color-orange-700: var(--color-orange-700);
+  --color-brown: var(--color-brown);
+  --color-brown-strong: var(--color-brown-strong);
+  --color-brown-soft: var(--color-brown-soft);
+  --color-terracotta: var(--color-terracotta);
+  --color-terracotta-dark: var(--color-terracotta-dark);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-text: var(--color-success-text);
+  --color-danger-text: var(--color-danger-text);
+}
 
-  --color-orange-strong-500: var(--color-orange-strong-500);
-  --color-orange-strong-600: var(--color-orange-strong-600);
-  --color-orange-strong-700: var(--color-orange-strong-700);
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-nunito), "Nunito", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-heading {
+  font-family: var(--font-poppins), "Poppins", sans-serif;
 }
 
 /* Evita el "callback azul" al tocar en móviles/tablets */
@@ -52,4 +85,88 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* ---------- Utilidades de estilo compartidas ---------- */
+.shadow-card {
+  box-shadow: var(--shadow-soft);
+}
+.shadow-card-hover {
+  box-shadow: var(--shadow-hover);
+}
+.shadow-btn {
+  box-shadow: var(--shadow-button);
+}
+
+.gradient-header {
+  background: linear-gradient(135deg, var(--color-peach) 0%, var(--color-peach-strong) 100%);
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, var(--color-orange-500) 0%, var(--color-orange-600) 100%);
+}
+
+.gradient-btn:active {
+  transform: scale(0.97);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 180ms ease;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-pop-in {
+  animation: pop-in 150ms ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 180ms ease;
+}
+
+/* ---------- Impresión de la nota de despacho ---------- */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #nota-despacho,
+  #nota-despacho * {
+    visibility: visible;
+  }
+  #nota-despacho {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 16px;
+    box-shadow: none !important;
+  }
 }
