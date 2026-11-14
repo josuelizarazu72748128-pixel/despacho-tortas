@@ -9,7 +9,7 @@ export const CATEGORIES: CategoryDef[] = [
   { id: "tortas", label: "Tortas por molde", order: 1 },
   { id: "minis", label: "Mini tortas", order: 2 },
   { id: "pays", label: "Pays", order: 3 },
-  { id: "brazos", label: "Brazos de reina", order: 4 },
+  { id: "brazos", label: "Brazos", order: 4 },
   { id: "masas", label: "Masas", order: 5 },
   { id: "vasos", label: "Vasos", order: 6 },
   { id: "otros", label: "Otros", order: 7 },
@@ -85,9 +85,7 @@ const OTHER_PRODUCTS: SeedProduct[] = [
   { id: "masas", name: "Masas", category: "masas", price: 2.9 },
   { id: "masas-especiales", name: "Masas especiales", category: "masas", price: 3.5 },
 
-  { id: "vaso", name: "Vaso", category: "vasos", price: 12 },
-  { id: "vaso-20", name: "Vaso 20", category: "vasos", price: 70 },
-  { id: "vaso-25", name: "Vaso 25", category: "vasos", price: 87 },
+  { id: "vaso", name: "Torta en vaso", category: "vasos", price: 12 },
 
   { id: "diseno", name: "Diseño", category: "otros", price: 35 },
   { id: "brownie", name: "Brownie", category: "otros", price: 5.8 },

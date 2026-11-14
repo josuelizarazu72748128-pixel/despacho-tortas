@@ -29,6 +29,10 @@ const SERVER_SNAPSHOT: AppData = createInitialData();
 let cachedSnapshot: AppData | null = null;
 const listeners = new Set<() => void>();
 
+// Productos descontinuados: si quedan guardados en localStorage de una
+// instalación previa, se quitan del catálogo y de las listas de precios.
+const DISCONTINUED_PRODUCT_IDS = new Set(["vaso-20", "vaso-25"]);
+
 // Rellena campos nuevos que puedan faltar en datos guardados por una versión
 // anterior de la app, sin tocar ni perder nada de lo que ya existía.
 function migrate(raw: Partial<AppData> | null | undefined): AppData {
@@ -40,10 +44,22 @@ function migrate(raw: Partial<AppData> | null | undefined): AppData {
     driverName: h.driverName ?? "",
   }));
   const maxNumber = history.reduce((max, h) => Math.max(max, h.number ?? 0), 0);
+
+  const catalog = (raw.catalog ?? base.catalog)
+    .filter((p) => !DISCONTINUED_PRODUCT_IDS.has(p.id))
+    .map((p) => (p.id === "vaso" ? { ...p, name: "Torta en vaso" } : p));
+
+  const prices: AppData["prices"] = {};
+  for (const [placeId, placePrices] of Object.entries(raw.prices ?? base.prices)) {
+    const cleaned = { ...placePrices };
+    DISCONTINUED_PRODUCT_IDS.forEach((id) => delete cleaned[id]);
+    prices[placeId] = cleaned;
+  }
+
   return {
-    catalog: raw.catalog ?? base.catalog,
+    catalog,
     places: raw.places ?? base.places,
-    prices: raw.prices ?? base.prices,
+    prices,
     priceMeta: raw.priceMeta ?? base.priceMeta,
     history,
     drivers: raw.drivers ?? base.drivers,
